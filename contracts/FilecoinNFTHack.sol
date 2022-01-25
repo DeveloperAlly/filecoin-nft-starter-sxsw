@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 
+//See more at OpenZeppelin:https://docs.openzeppelin.com/contracts/4.x/erc721
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "hardhat/console.sol"; //alows for console.logs in a solidity contract"
@@ -19,7 +20,7 @@ contract FilecoinNFTHack is ERC721URIStorage {
         string tokenURI;
         uint256 tokenId;
     }
-    
+
     myNFT [] public nftCollection;
 
     /* tokenURI

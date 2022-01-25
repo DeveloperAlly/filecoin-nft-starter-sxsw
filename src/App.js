@@ -7,8 +7,11 @@ import filecoinNFTHack from "./utils/FilecoinNFTHack.json";
 import { NFTStorage, File } from "nft.storage";
 import { baseSVG } from "./utils/BaseSVG";
 
+/* Encryption package to ensure SVG data is not changed in the front-end before minting */
+import CryptoJS from "crypto-js";
+
 /* Javascript Lib for evm-compatible blockchain contracts */
-import { ethers } from "ethers";
+import { ethers, providers } from "ethers";
 
 /* UI Components & Style*/
 import "./styles/App.css";
@@ -20,6 +23,7 @@ import Link from "./components/Link";
 import DisplayLinks from "./components/DisplayLinks";
 import ConnectWalletButton from "./components/ConnectWalletButton";
 import NFTViewer from "./components/NFTViewer";
+import SaveToNFTStorage from "./components/SaveToNFTStorage";
 
 const INITIAL_LINK_STATE = {
   etherscan: "",
@@ -49,7 +53,10 @@ const App = () => {
   );
   const { loading, error, success } = transactionState; //make it easier
 
-  /* runs on page load - checks wallet is connected */
+  /* runs on page load - checks wallet is connected 
+   Really want to run this on any changes to a wallet too
+   So we can add address, chain and network checking
+  */
   useEffect(() => {
     checkIfWalletIsConnected();
   }, []);
@@ -59,6 +66,11 @@ const App = () => {
     setUpEventListener();
     fetchNFTCollection();
   }, [currentAccount]);
+
+  /* Create the IPFS gateway URL's when the nft collection state changes */
+  useEffect(() => {
+    createImageURLsForRetrieval(nftCollectionData);
+  }, [nftCollectionData])
 
   /* Check for a wallet */
   const checkIfWalletIsConnected = async () => {
@@ -177,9 +189,15 @@ const App = () => {
       token: process.env.REACT_APP_NFT_STORAGE_API_KEY,
     });
 
+    // The Advanced Encryption Standard (AES) is a U.S. Federal Information Processing Standard (FIPS). 
+    // It was selected after a 5-year process where 15 competing designs were evaluated.
+    // This is step one in preventing front end injection into the NFT we're trying to save and mint
+    const data = CryptoJS.AES.encrypt(`${baseSVG}${name}</text></svg>`, process.env.REACT_APP_ENCRYPT_KEY);
+
+
     //lets load up this token with some metadata and our image and save it to NFT.storage
     //image contains any File or Blob you want to save
-    //name, image, description, other traits.
+    // name, image, description, other traits.
     // useBlob to save one item to IPFS
     // use File to save all the json metadata needed - much like any object storage you're familiar with!
     try {
@@ -190,8 +208,7 @@ const App = () => {
             "NFT created for EthGlobal NFTHack 2022 and limited to 100 personalised tokens",
           image: new File(
             [
-              `${baseSVG}${name}</text>
-      </svg>`,
+              CryptoJS.AES.decrypt(data, process.env.REACT_APP_ENCRYPT_KEY).toString(CryptoJS.enc.Utf8)
             ],
             `FilecoinNFTHack.svg`,
             {
@@ -211,13 +228,14 @@ const App = () => {
           console.log("metadata saved", metadata);
 
           // To view the data we just saved in the browser we need to use an IPFS http bridge
-          // Or Brave Browser which has IPFS integration built into it
+          // Or Brave Browser / Opera which have IPFS integration built into them
           // Or run a local IPFS node (there's a desktop app)
+          // I'll use a gateway, so
           // This means manipulating the returned CID to configure it for a gateway...
           // Check gateways & their functionality here: https://ipfs.github.io/public-gateway-checker/
           createImageView(metadata);
           
-          //we can also check the status of our data using this
+          // we can also check the status of our data (such as storage deals made) using this
           // const status = await client.status(metadata.ipnft);
           // console.log("status", status);
 
@@ -303,6 +321,9 @@ const App = () => {
     to display the images in the UI 
   */
   const createImageURLsForRetrieval = async (collection) => {
+    if (collection.length < 1) return;
+    //only return the 5 most recent NFT images
+    // this collection is fetched on webpage load
     let dataCollection = collection
     .slice()
     .reverse()
@@ -314,19 +335,9 @@ const App = () => {
     let imgURLs = await Promise.all(
       dataCollection.map(async (el) => {
         const ipfsGatewayLink = createIPFSgatewayLink(el);
-        // let link = el[1].split("/");
-        // let fetchURL = `https://${link[2]}.ipfs.dweb.link/${link[3]}`;
         console.log("fetchURL", ipfsGatewayLink);
-        const response = await fetch(ipfsGatewayLink, 
-      //     {
-      //     method : "GET",
-      //     mode: 'cors',
-      //     type: 'cors',
-      //     headers: {}
-      // }
-      );
+        const response = await fetch(ipfsGatewayLink);
         const json = await response.json();
-        // console.log("Responsejson", json)
         return json;
       })
     );
@@ -341,36 +352,29 @@ const App = () => {
  */
   const fetchNFTCollection = async () => {
     console.log("fetching nft collection");
-    try {
-      const { ethereum } = window;
+    const provider = new ethers.providers.JsonRpcProvider("https://speedy-nodes-nyc.moralis.io/b448324e12e4f4243acad791/eth/rinkeby");
+    // provider is read-only get a signer for on-chain transactions
+    // const signer = provider.getSigner();
+    // const provider = new ethers.providers.Web3Provider(ethereum);
+    // const signer = provider.getSigner();
+    const connectedContract = new ethers.Contract(
+      CONTRACT_ADDRESS,
+      filecoinNFTHack.abi,
+      provider
+    );
 
-      if (ethereum) {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const connectedContract = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          filecoinNFTHack.abi,
-          signer
-        );
+    await connectedContract.remainingMintableNFTs().then(remainingNFTs => {
+      console.log("resp", remainingNFTs)
+      setRemainingNFTs(remainingNFTs.toNumber()); //update state
+    }).catch(err => console.log("error getting remaining nfts", err));
 
-        let remainingNFTs = await connectedContract.remainingMintableNFTs();
-        setRemainingNFTs(remainingNFTs.toNumber()); //update state
+    await connectedContract.getNFTCollection().then(collection => {
+      console.log("collection", collection);
+      setNftCollectionData(collection); //update state
+    }).catch(err => console.log("error fetching nft collection data", err));
 
-        let collection = await connectedContract.getNFTCollection();
-        setNftCollectionData(collection); //update state
-        console.log("collection", collection);
-
-        /***
-         * Going to put these in the view collection
-         */
-        await createImageURLsForRetrieval(collection);
-
-      } else {
-        console.log("Ethereum object doesn't exist!");
-      }
-    } catch (error) {
-      console.log(error);
-    }
+    // //do this in an effect when collection changes
+    // await createImageURLsForRetrieval(nftCollectionData);
   };
 
 
