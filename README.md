@@ -7,15 +7,15 @@ It takes advantage of the very handy IPFS & Filecoin dev ecosystem tool NFT.Stor
 
 The DApp UI is deployed on fleek.co. Fleek makes it easy to deploy websites and apps on the new open web: permissionless, trustless, censorship resistant, and free of centralized gatekeepers.
 
-You can see the project live here: https://shrill-wave-1303.on.fleek.co/ 
-
+You can see the project live here: https://shrill-wave-1303.on.fleek.co/
 
 # Read-me still a work in progress.... watch this git commit! XD
 
 Dev Things (contracts):
+
 - Solidity
 - Hardhat
-- Alchemy 
+- Alchemy
 
 Ways to save your NFT SVG
 
@@ -28,6 +28,14 @@ Run contract: npx hardhat
 > run scripts/run.js  
 > Deploy contract to rinkeby:
 > npx hardhat run scripts/deploy.js --network rinkeby
+
+Verify your contract on etherscan
+
+> npx hardhat verify --network rinkeby --contract contracts/FilecoinTicketNFT.sol:FilecoinTicketNFT DEPLOYED_CONTRACT_ADDRESS "TRUSTED_FORWARDER_ARG"
+
+See your contract deployment: https://rinkeby.etherscan.io/address/DEPLOYED_CONTRACT_ADDRESS
+
+> npx hardhat verify --network rinkeby DEPLOYED_CONTRACT_ADDRESS
 
 Running the front end localy (host on Fleek)
 npm install && npm start
@@ -100,4 +108,4 @@ Resources
 - Read the IPFS best practice guide for NFT's https://docs.ipfs.io/how-to/mint-nfts-with-ipfs/#a-short-introduction-to-nfts
 - See the NFT.School guide https://nftschool.dev/
 - Public Gateway status checker: https://ipfs.github.io/public-gateway-checker/
-- Faucets for rinkeby eth:
+- Faucets for rinkeby eth:Connect to pinata on alchemy: https://docs.alchemy.com/alchemy/tutorials/nft-minter#create-your-alchemy-api-key

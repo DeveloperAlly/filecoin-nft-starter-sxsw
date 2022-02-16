@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 /* ERC71 based Solidity Contract Interface */
-import filecoinNFTHack from "./utils/FilecoinNFTHack.json";
+import FilecoinTicketNFT from "./utils/FilecoinTicketNFT.json";
 
 /* NFT.Storage import for creating an IPFS CID & storing with Filecoin */
 import { NFTStorage, File } from "nft.storage";
@@ -10,7 +10,8 @@ import { baseSVG } from "./utils/BaseSVG";
 /* Encryption package to ensure SVG data is not changed in the front-end before minting */
 import CryptoJS from "crypto-js";
 
-/* Javascript Lib for evm-compatible blockchain contracts */
+/* Javascript Lib for evm-compatible blockchain contracts & forwarder for gasless nft*/
+// import {Biconomy} from "@biconomy/mexa"; //not compatible
 import { ethers, providers } from "ethers";
 
 /* UI Components & Style*/
@@ -53,24 +54,28 @@ const App = () => {
   );
   const { loading, error, success } = transactionState; //make it easier
 
+  // const biconomy = new Biconomy(provider);
+
   /* runs on page load - checks wallet is connected 
    Really want to run this on any changes to a wallet too
    So we can add address, chain and network checking
   */
   useEffect(() => {
     checkIfWalletIsConnected();
+    fetchNFTCollection();
   }, []);
 
   /* If a wallet is connected, do some setup */
   useEffect(() => {
     setUpEventListener();
-    fetchNFTCollection();
+    // fetchNFTCollection();
   }, [currentAccount]);
 
   /* Create the IPFS gateway URL's when the nft collection state changes */
   useEffect(() => {
     createImageURLsForRetrieval(nftCollectionData);
   }, [nftCollectionData])
+
 
   /* Check for a wallet */
   const checkIfWalletIsConnected = async () => {
@@ -126,29 +131,31 @@ const App = () => {
   const setUpEventListener = async () => {
     try {
       const { ethereum } = window;
-
+      let provider;
       if (ethereum) {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const connectedContract = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          filecoinNFTHack.abi,
-          signer
-        );
-
-        connectedContract.on("RemainingMintableNFTChange", (remainingNFTs) => {
-          setRemainingNFTs(remainingNFTs);
-        });
-        connectedContract.on(
-          "NewFilecoinNFTMinted",
-          (sender, tokenId, tokenURI) => {
-            console.log("event - new minted NFT");
-            fetchNFTCollection();
-          }
-        );
+        provider = new ethers.providers.Web3Provider(ethereum)
       } else {
-        console.log("Ethereum object doesn't exist!");
+        provider = ethers.getDefaultProvider('rinkeby', {
+            alchemy: process.env.ALCHEMY_RINKEBY_API
+          });
       }
+      const signer = provider.getSigner();
+      const connectedContract = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        FilecoinTicketNFT.abi,
+        signer
+      );
+
+      connectedContract.on("RemainingMintableNFTChange", (remainingNFTs) => {
+        setRemainingNFTs(remainingNFTs);
+      });
+      connectedContract.on(
+        "NewFilecoinNFTMinted",
+        (sender, tokenId, tokenURI) => {
+          console.log("event - new minted NFT");
+          fetchNFTCollection();
+        }
+      );
     } catch (error) {
       console.log(error);
     }
@@ -192,7 +199,7 @@ const App = () => {
     // The Advanced Encryption Standard (AES) is a U.S. Federal Information Processing Standard (FIPS). 
     // It was selected after a 5-year process where 15 competing designs were evaluated.
     // This is step one in preventing front end injection into the NFT we're trying to save and mint
-    const data = CryptoJS.AES.encrypt(`${baseSVG}${name}</text></svg>`, process.env.REACT_APP_ENCRYPT_KEY);
+    const data = CryptoJS.AES.encrypt(`${baseSVG}${name}</tspan></text></svg>`, process.env.REACT_APP_ENCRYPT_KEY);
 
 
     //lets load up this token with some metadata and our image and save it to NFT.storage
@@ -203,14 +210,14 @@ const App = () => {
     try {
       await client
         .store({
-          name: `${name}: Filecoin @ NFTHack 2022`,
+          name: `${name}: Filecoin @ Faber Web3 Hack 2022`,
           description:
-            "NFT created for EthGlobal NFTHack 2022 and limited to 100 personalised tokens",
+            "NFT created for Faber Web3 Hack 2022 and limited to 100 personalised tokens",
           image: new File(
             [
               CryptoJS.AES.decrypt(data, process.env.REACT_APP_ENCRYPT_KEY).toString(CryptoJS.enc.Utf8)
             ],
-            `FilecoinNFTHack.svg`,
+            `FilecoinFaberWeb3Hack.svg`,
             {
               type: "image/svg+xml",
             }
@@ -268,7 +275,7 @@ const App = () => {
         const signer = provider.getSigner();
         const connectedContract = new ethers.Contract(
           CONTRACT_ADDRESS,
-          filecoinNFTHack.abi,
+          FilecoinTicketNFT.abi,
           signer
         );
 
@@ -352,14 +359,17 @@ const App = () => {
  */
   const fetchNFTCollection = async () => {
     console.log("fetching nft collection");
-    const provider = new ethers.providers.JsonRpcProvider("https://speedy-nodes-nyc.moralis.io/b448324e12e4f4243acad791/eth/rinkeby");
+    // const provider = new ethers.providers.JsonRpcProvider("https://speedy-nodes-nyc.moralis.io/b448324e12e4f4243acad791/eth/rinkeby");
+    const provider = ethers.getDefaultProvider('rinkeby', {
+      alchemy: process.env.ALCHEMY_RINKEBY_API
+    });
     // provider is read-only get a signer for on-chain transactions
     // const signer = provider.getSigner();
     // const provider = new ethers.providers.Web3Provider(ethereum);
     // const signer = provider.getSigner();
     const connectedContract = new ethers.Contract(
       CONTRACT_ADDRESS,
-      filecoinNFTHack.abi,
+      FilecoinTicketNFT.abi,
       provider
     );
 
@@ -368,8 +378,16 @@ const App = () => {
       setRemainingNFTs(remainingNFTs.toNumber()); //update state
     }).catch(err => console.log("error getting remaining nfts", err));
 
+    let maxNFTs;
+    await connectedContract.maxNFTs().then(max => {
+      maxNFTs= max;
+    }).catch(err => console.log("error getting max nfts", err));
+
     await connectedContract.getNFTCollection().then(collection => {
       console.log("collection", collection);
+      if(collection.length === 0) {
+        setRemainingNFTs(maxNFTs);
+      }
       setNftCollectionData(collection); //update state
     }).catch(err => console.log("error fetching nft collection data", err));
 
