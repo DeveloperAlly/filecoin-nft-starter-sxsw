@@ -42,7 +42,8 @@ const INITIAL_TRANSACTION_STATE = {
 const CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 const App = () => {
-  const [currentAccount, setCurrentAccount] = useState("");
+  const [currentAccount, setCurrentAccount] = useState(null);
+  const [hasTicket, setHasTicket] = useState(false);
   const [name, setName] = useState("");
   const [linksObj, setLinksObj] = useState(INITIAL_LINK_STATE);
   const [imageView, setImageView] = useState("");
@@ -68,6 +69,9 @@ const App = () => {
   /* If a wallet is connected, do some setup */
   useEffect(() => {
     setUpEventListener();
+    if(currentAccount) {
+      checkIfEligible();
+    }
     // fetchNFTCollection();
   }, [currentAccount]);
 
@@ -95,17 +99,43 @@ const App = () => {
       setCurrentAccount(accounts[0]);
     } else {
       console.log("No authorized account found");
+      setCurrentAccount(null)
     }
 
     //TODO: make sure on right network or change programatically
-    // let chainId = await ethereum.request({ method: 'eth_chainId' });
-    // console.log("Connected to chain " + chainId);
+    let chainId = await ethereum.request({ method: 'eth_chainId' });
+    console.log("Connected to chain " + chainId);
+
+    ethereum.on('accountsChanged', (accounts) => {
+      console.log("account changed", accounts);
+      // Handle the new accounts, or lack thereof (ie locked wallet).
+      // "accounts" will always be an array, but it can be empty.
+      resetState();
+      if(accounts.length<1) {
+        console.log("need to connect to wallet")
+        setCurrentAccount(null);
+        connectWallet();
+      } else {
+        setCurrentAccount(accounts[0]);
+      }
+      window.location.reload();
+    });
+    
+    const rinkebyChainId = "0x4";
+    ethereum.on('chainChanged', (chainId) => {
+      if(chainId !== rinkebyChainId){
+        requestChainChange();
+      }
+      // Handle the new chain.
+      // Correctly handling chain changes can be complicated.
+      // We recommend reloading the page unless you have good reason not to.
+      window.location.reload();
+    });
 
     // // String, hex code of the chainId of the Rinkebey test network
-    // const rinkebyChainId = "0x4";
-    // if (chainId !== rinkebyChainId) {
-    //   alert("You are not connected to the Rinkeby Test Network!");
-    // }
+    if (chainId !== rinkebyChainId) {
+      requestChainChange();
+    }
   };
 
   /* Connect a wallet */
@@ -126,6 +156,15 @@ const App = () => {
       console.log(error);
     }
   };
+
+
+  //app is on rinkeby only
+  const requestChainChange = async () => {
+    await window.ethereum.request(
+      { method: 'wallet_switchEthereumChain', params:[{chainId: '0x4'}]})
+      .then(chainId => console.log(chainId))
+      .catch(err => console.log(err));
+  }
 
   /* Listens for events emitted from the solidity contract, to render data accurately */
   const setUpEventListener = async () => {
@@ -168,6 +207,29 @@ const App = () => {
     setImageView("");
   }
 
+  const checkIfEligible = async () => {
+    if(currentAccount){
+      const provider = ethers.getDefaultProvider('rinkeby', {
+        alchemy: process.env.ALCHEMY_RINKEBY_API
+      });
+      const connectedContract = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        FilecoinTicketNFT.abi,
+        provider
+      );
+      await connectedContract.ownsTicketNFT(currentAccount).then(resp => {
+        console.log("resp", resp)
+        if(resp === true ){
+          setHasTicket(true);
+          setTransactionState({
+          ...INITIAL_TRANSACTION_STATE,
+          error: "This account already owns a Ticket",
+        });
+      }
+      }).catch(err => console.log("error checking account eligibility", err));
+    }
+  }
+
   /* Helper function for createNFTData */
   const createImageView = (metadata) => {
     let imgViewArray = metadata.data.image.pathname.split("/");
@@ -184,6 +246,15 @@ const App = () => {
   /* Create the IPFS CID of the json data */
   const createNFTData = async () => {
     console.log("saving to NFT storage");
+
+    if(hasTicket) {
+      setTransactionState({
+        ...INITIAL_TRANSACTION_STATE,
+        error: "This account already owns a Ticket",
+      });
+      return;
+    }
+
     resetState();
     setTransactionState({
       ...INITIAL_TRANSACTION_STATE,
@@ -232,6 +303,7 @@ const App = () => {
             success: "Saved NFT data to NFT.Storage...!! We created an IPFS CID & made a Filecoin Storage Deal with one call!",
             loading: "",
           });
+          setHasTicket(true);
           console.log("metadata saved", metadata);
 
           // To view the data we just saved in the browser we need to use an IPFS http bridge
@@ -398,7 +470,7 @@ const App = () => {
 
   /* Render our page */
   return (
-    <Layout connected={currentAccount === ""} connectWallet={connectWallet}>
+    <Layout connected={currentAccount === null} connectWallet={connectWallet}>
       <>
         <p className="sub-sub-text">{`Remaining NFT's: ${remainingNFTs}`}</p>
         {transactionState !== INITIAL_TRANSACTION_STATE && <Status transactionState={transactionState}/>}
@@ -406,12 +478,12 @@ const App = () => {
           !linksObj.etherscan && <Link link={imageView} description="See IPFS image link"/>}
         {imageView && <ImagePreview imgLink ={imageView}/>}
         {linksObj.etherscan && <DisplayLinks linksObj={linksObj} />}
-        {currentAccount === "" ? (
+        {currentAccount === null ? (
           <ConnectWalletButton connectWallet={connectWallet}/>
         ) : transactionState.loading ? (
           <div />
         ) : (
-          <MintNFTInput name={name} setName={setName} transactionState={transactionState} createNFTData={createNFTData}/>
+          !hasTicket && <MintNFTInput name={name} setName={setName} transactionState={transactionState} createNFTData={createNFTData} />
         )}
         {recentlyMinted && <NFTViewer recentlyMinted={recentlyMinted}/>}
       </>

@@ -588,8 +588,8 @@
       ]
     },
     "/Users/developerally/Desktop/Code/Examples/filecoin-event-nft-project/contracts/FilecoinTicketNFT.sol": {
-      "lastModificationDate": 1645016265097,
-      "contentHash": "3aad8a7684deb482b25a0c5634f5c0fc",
+      "lastModificationDate": 1645069160583,
+      "contentHash": "09d9914ee689afb976a37695c46fb88d",
       "sourceName": "contracts/FilecoinTicketNFT.sol",
       "solcConfig": {
         "version": "0.8.4",

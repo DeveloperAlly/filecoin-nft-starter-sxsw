@@ -47,7 +47,11 @@ contract FilecoinTicketNFT is ERC721URIStorage, Ownable {
 
     function mintMyNFT(string memory ipfsURI) public {
         require(_tokenIds.current() < maxNFTs);
-        require(!hasTicketNFT[msg.sender]); //get rid of this for demo
+        //should also check on front end before minting
+        require(
+            !hasTicketNFT[msg.sender],
+            "You have already minted a ticket NFT!"
+        ); //get rid of this for demo
 
         console.log("Minting NFT", msg.sender, ipfsURI);
         uint256 newItemId = _tokenIds.current();
@@ -83,5 +87,9 @@ contract FilecoinTicketNFT is ERC721URIStorage, Ownable {
 
     function getRemainingMintableNFTs() public view returns (uint256) {
         return remainingMintableNFTs;
+    }
+
+    function ownsTicketNFT(address _a) public view returns (bool) {
+        return hasTicketNFT[_a];
     }
 }
