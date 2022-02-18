@@ -9,6 +9,8 @@ The DApp UI is deployed on fleek.co. Fleek makes it easy to deploy websites and 
 
 You can see the project live here: https://shrill-wave-1303.on.fleek.co/ 
 
+<img width="1714" alt="Screen Shot 2022-02-18 at 8 16 37 pm" src="https://user-images.githubusercontent.com/12529822/154653665-db2c101d-32de-4da5-b072-ea461cfec84b.png">
+
 
 # Read-me still a work in progress.... watch this git commit! XD
 
