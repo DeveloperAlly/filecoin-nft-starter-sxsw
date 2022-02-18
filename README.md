@@ -14,24 +14,9 @@ There is a video explaining the concepts of this project available here: https:/
 <img width="1714" alt="Screen Shot 2022-02-18 at 8 16 37 pm" src="https://user-images.githubusercontent.com/12529822/154653665-db2c101d-32de-4da5-b072-ea461cfec84b.png">
 
 
-
-# Read-me still a work in progress.... watch this git commit! XD
-
-Dev Things (contracts):
-
-- Solidity
-- Hardhat
-- Alchemy
-
-Ways to save your NFT SVG
-
-1. You can save it in the contrct itself
-2. You can save it as an IPFS CID
-3. You can use web2... (we wouldn't do that though would we!)
+# Quick Start:
 
 To run this project you will need metamask, API keys for NFT.Storage, and an ethereum blockchain server like Alchemy, Infura or Moralis + optionally an Etherscan key to verify your contract - see the .env.example.
-
-To run:
 
 1. Set up a .env file with the needed API key variables (see .env.example for these) apart from the contract address
 ```touch .env```
@@ -60,14 +45,27 @@ Additionally, you can verify your contract on etherscan
 See your contract deployment on etherscan: https://rinkeby.etherscan.io/address/DEPLOYED_CONTRACT_ADDRESS
 
 
+# Dependencies
+
+Dev Things (contracts):
+
+- Solidity
+- Hardhat
+- Alchemy
+
+Ways to save your NFT SVG
+
+1. You can save it in the contrct itself
+2. You can save it as an IPFS CID
+3. You can use web2... (we wouldn't do that though would we!)
+
+
 # Further Resources
 
 - Read the IPFS best practice guide for NFT's https://docs.ipfs.io/how-to/mint-nfts-with-ipfs/#a-short-introduction-to-nfts
 - See the NFT.School guide https://nftschool.dev/
 - Public Gateway status checker: https://ipfs.github.io/public-gateway-checker/
 - Faucets for rinkeby eth: https://faucets.chain.link/rinkeby 
-
-
 
 # To make this project from scratch:
 
