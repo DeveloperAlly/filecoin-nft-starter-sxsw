@@ -9,6 +9,8 @@ The DApp UI is deployed on fleek.co. Fleek makes it easy to deploy websites and 
 
 You can see the project live here: https://snowy-sun-5772.on.fleek.co/
 
+There is a video explaining the concepts of this project available here: https://www.youtube.com/watch?v=bIZNW_c6Hx4
+
 <img width="1714" alt="Screen Shot 2022-02-18 at 8 16 37 pm" src="https://user-images.githubusercontent.com/12529822/154653665-db2c101d-32de-4da5-b072-ea461cfec84b.png">
 
 
@@ -27,30 +29,44 @@ Ways to save your NFT SVG
 2. You can save it as an IPFS CID
 3. You can use web2... (we wouldn't do that though would we!)
 
-To run this project you will need metamask, API keys for NFT.Storage, and an ethereum chain server like Alchemy, Infura or Moralis + optionally an Etherscan key to verify your contract - see the .env.example.
+To run this project you will need metamask, API keys for NFT.Storage, and an ethereum blockchain server like Alchemy, Infura or Moralis + optionally an Etherscan key to verify your contract - see the .env.example.
 
-Run contract locally with hardhat: 
+To run:
 
-```npx hardhat run scripts/deploy.js ```
+1. Set up a .env file with the needed API key variables (see .env.example for these) apart from the contract address
+```touch .env```
 
-Deploy contract to rinkeby:
+2. Install the project dependencies
+```npm install```
+
+3. Run contract locally with hardhat: 
+
+```npx hardhat run scripts/deploys.js ```
+
+Deploy contract to rinkeby ethereum testnet (additionally you could deploy to EVM-compatible networks like polygon, bnb or avax with some hardhat config setup):
 
 ```npx hardhat run scripts/deploy.js --network rinkeby```
 
+Add the contract address printed from either of these deployments to your .env file.
+
 Running the front end locally
-```npm install && npm start```
+```npm start```
 
 
-Verify your contract on etherscan
+Additionally, you can verify your contract on etherscan
 
-> npx hardhat verify --network rinkeby --contract contracts/FilecoinTicketNFT.sol:FilecoinTicketNFT DEPLOYED_CONTRACT_ADDRESS "TRUSTED_FORWARDER_ARG"
+```npx hardhat verify --network rinkeby --contract contracts/FilecoinTicketNFT.sol:FilecoinTicketNFT DEPLOYED_CONTRACT_ADDRESS```
 
-See your contract deployment: https://rinkeby.etherscan.io/address/DEPLOYED_CONTRACT_ADDRESS
+See your contract deployment on etherscan: https://rinkeby.etherscan.io/address/DEPLOYED_CONTRACT_ADDRESS
 
-> npx hardhat verify --network rinkeby DEPLOYED_CONTRACT_ADDRESS
 
-Running the front end localy (host on Fleek)
-npm install && npm start
+# Further Resources
+
+- Read the IPFS best practice guide for NFT's https://docs.ipfs.io/how-to/mint-nfts-with-ipfs/#a-short-introduction-to-nfts
+- See the NFT.School guide https://nftschool.dev/
+- Public Gateway status checker: https://ipfs.github.io/public-gateway-checker/
+- Faucets for rinkeby eth: https://faucets.chain.link/rinkeby 
+
 
 
 # To make this project from scratch:
@@ -115,11 +131,4 @@ Tasks - development of front end
 Tasks - deployment of front end
 
 - Use Fleek.co
-
-Resources
-
-- Read the IPFS best practice guide for NFT's https://docs.ipfs.io/how-to/mint-nfts-with-ipfs/#a-short-introduction-to-nfts
-- See the NFT.School guide https://nftschool.dev/
-- Public Gateway status checker: https://ipfs.github.io/public-gateway-checker/
-- Faucets for rinkeby eth: https://faucets.chain.link/rinkeby 
 
