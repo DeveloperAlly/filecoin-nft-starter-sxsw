@@ -7,7 +7,11 @@ It takes advantage of the very handy IPFS & Filecoin dev ecosystem tool NFT.Stor
 
 The DApp UI is deployed on fleek.co. Fleek makes it easy to deploy websites and apps on the new open web: permissionless, trustless, censorship resistant, and free of centralized gatekeepers.
 
-You can see the project live here: https://shrill-wave-1303.on.fleek.co/
+You can see the project live here: https://shrill-wave-1303.on.fleek.co/ 
+
+<img width="1714" alt="Screen Shot 2022-02-18 at 8 16 37 pm" src="https://user-images.githubusercontent.com/12529822/154653665-db2c101d-32de-4da5-b072-ea461cfec84b.png">
+
+
 
 # Read-me still a work in progress.... watch this git commit! XD
 
@@ -23,11 +27,19 @@ Ways to save your NFT SVG
 2. You can save it as an IPFS CID
 3. You can use web2... (we wouldn't do that though would we!)
 
-Run contract: npx hardhat
+To run this project you will need metamask, API keys for NFT.Storage, and an ethereum chain server like Alchemy, Infura or Moralis + optionally an Etherscan key to verify your contract - see the .env.example.
 
-> run scripts/run.js  
-> Deploy contract to rinkeby:
-> npx hardhat run scripts/deploy.js --network rinkeby
+Run contract locally with hardhat: 
+
+```npx hardhat run scripts/deploy.js ```
+
+Deploy contract to rinkeby:
+
+```npx hardhat run scripts/deploy.js --network rinkeby```
+
+Running the front end locally
+```npm install && npm start```
+
 
 Verify your contract on etherscan
 
@@ -40,12 +52,13 @@ See your contract deployment: https://rinkeby.etherscan.io/address/DEPLOYED_CONT
 Running the front end localy (host on Fleek)
 npm install && npm start
 
-To make this project from scratch:
+
+# To make this project from scratch:
 
 Dependencies:
 Node installed.
 Metamask, https://metamask.io/download.html
-Moralis Quick server details (or infure/achemy),
+Moralis Quick server details (or infura/achemy),
 etherscan account (for verifying contract)
 
 Tasks - setup:
@@ -108,4 +121,5 @@ Resources
 - Read the IPFS best practice guide for NFT's https://docs.ipfs.io/how-to/mint-nfts-with-ipfs/#a-short-introduction-to-nfts
 - See the NFT.School guide https://nftschool.dev/
 - Public Gateway status checker: https://ipfs.github.io/public-gateway-checker/
-- Faucets for rinkeby eth:Connect to pinata on alchemy: https://docs.alchemy.com/alchemy/tutorials/nft-minter#create-your-alchemy-api-key
+- Faucets for rinkeby eth: https://faucets.chain.link/rinkeby 
+
