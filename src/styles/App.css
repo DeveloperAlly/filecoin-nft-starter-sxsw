@@ -15,6 +15,10 @@
 
 .header-container {
   padding-top: 0px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .header {
@@ -36,7 +40,7 @@
 }
 
 .gradient-text {
-  background: -webkit-linear-gradient(left, #60c657 30%, #35aee2 60%);
+  background: -webkit-linear-gradient(left, #ff0000 30%, #1b58e1 60%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -56,13 +60,13 @@
 }
 
 .connect-wallet-button {
-  background: -webkit-linear-gradient(left, #60c657, #35aee2);
+  background: -webkit-linear-gradient(left, #ff0000, #1b58e1);
   background-size: 200% 200%;
   animation: gradient-animation 4s ease infinite;
 }
 
 .connect-to-wallet-button {
-  background: -webkit-linear-gradient(left, #fff985, #ff84fd);
+  background: -webkit-linear-gradient(left, #1a58e1, #0090ff);
   background-size: 200% 200%;
   animation: gradient-animation 4s ease infinite;
 }

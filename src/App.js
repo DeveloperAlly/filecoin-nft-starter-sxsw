@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 /* ERC71 based Solidity Contract Interface */
-import filecoinNFTHack from "./utils/FilecoinNFTHack.json";
+import FilecoinTicketNFT from "./utils/FilecoinTicketNFT.json";
 
 /* NFT.Storage import for creating an IPFS CID & storing with Filecoin */
 import { NFTStorage, File } from "nft.storage";
@@ -10,7 +10,8 @@ import { baseSVG } from "./utils/BaseSVG";
 /* Encryption package to ensure SVG data is not changed in the front-end before minting */
 import CryptoJS from "crypto-js";
 
-/* Javascript Lib for evm-compatible blockchain contracts */
+/* Javascript Lib for evm-compatible blockchain contracts & forwarder for gasless nft*/
+// import {Biconomy} from "@biconomy/mexa"; //not compatible
 import { ethers, providers } from "ethers";
 
 /* UI Components & Style*/
@@ -41,7 +42,8 @@ const INITIAL_TRANSACTION_STATE = {
 const CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 const App = () => {
-  const [currentAccount, setCurrentAccount] = useState("");
+  const [currentAccount, setCurrentAccount] = useState(null);
+  const [hasTicket, setHasTicket] = useState(false);
   const [name, setName] = useState("");
   const [linksObj, setLinksObj] = useState(INITIAL_LINK_STATE);
   const [imageView, setImageView] = useState("");
@@ -53,24 +55,31 @@ const App = () => {
   );
   const { loading, error, success } = transactionState; //make it easier
 
+  // const biconomy = new Biconomy(provider);
+
   /* runs on page load - checks wallet is connected 
    Really want to run this on any changes to a wallet too
    So we can add address, chain and network checking
   */
   useEffect(() => {
     checkIfWalletIsConnected();
+    fetchNFTCollection();
   }, []);
 
   /* If a wallet is connected, do some setup */
   useEffect(() => {
     setUpEventListener();
-    fetchNFTCollection();
+    if(currentAccount) {
+      checkIfEligible();
+    }
+    // fetchNFTCollection();
   }, [currentAccount]);
 
   /* Create the IPFS gateway URL's when the nft collection state changes */
   useEffect(() => {
     createImageURLsForRetrieval(nftCollectionData);
   }, [nftCollectionData])
+
 
   /* Check for a wallet */
   const checkIfWalletIsConnected = async () => {
@@ -90,17 +99,43 @@ const App = () => {
       setCurrentAccount(accounts[0]);
     } else {
       console.log("No authorized account found");
+      setCurrentAccount(null)
     }
 
     //TODO: make sure on right network or change programatically
-    // let chainId = await ethereum.request({ method: 'eth_chainId' });
-    // console.log("Connected to chain " + chainId);
+    let chainId = await ethereum.request({ method: 'eth_chainId' });
+    console.log("Connected to chain " + chainId);
+
+    ethereum.on('accountsChanged', (accounts) => {
+      console.log("account changed", accounts);
+      // Handle the new accounts, or lack thereof (ie locked wallet).
+      // "accounts" will always be an array, but it can be empty.
+      resetState();
+      if(accounts.length<1) {
+        console.log("need to connect to wallet")
+        setCurrentAccount(null);
+        connectWallet();
+      } else {
+        setCurrentAccount(accounts[0]);
+      }
+      window.location.reload();
+    });
+    
+    const rinkebyChainId = "0x4";
+    ethereum.on('chainChanged', (chainId) => {
+      if(chainId !== rinkebyChainId){
+        requestChainChange();
+      }
+      // Handle the new chain.
+      // Correctly handling chain changes can be complicated.
+      // We recommend reloading the page unless you have good reason not to.
+      window.location.reload();
+    });
 
     // // String, hex code of the chainId of the Rinkebey test network
-    // const rinkebyChainId = "0x4";
-    // if (chainId !== rinkebyChainId) {
-    //   alert("You are not connected to the Rinkeby Test Network!");
-    // }
+    if (chainId !== rinkebyChainId) {
+      requestChainChange();
+    }
   };
 
   /* Connect a wallet */
@@ -122,33 +157,44 @@ const App = () => {
     }
   };
 
+
+  //app is on rinkeby only
+  const requestChainChange = async () => {
+    await window.ethereum.request(
+      { method: 'wallet_switchEthereumChain', params:[{chainId: '0x4'}]})
+      .then(chainId => console.log(chainId))
+      .catch(err => console.log(err));
+  }
+
   /* Listens for events emitted from the solidity contract, to render data accurately */
   const setUpEventListener = async () => {
     try {
       const { ethereum } = window;
-
+      let provider;
       if (ethereum) {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const connectedContract = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          filecoinNFTHack.abi,
-          signer
-        );
-
-        connectedContract.on("RemainingMintableNFTChange", (remainingNFTs) => {
-          setRemainingNFTs(remainingNFTs);
-        });
-        connectedContract.on(
-          "NewFilecoinNFTMinted",
-          (sender, tokenId, tokenURI) => {
-            console.log("event - new minted NFT");
-            fetchNFTCollection();
-          }
-        );
+        provider = new ethers.providers.Web3Provider(ethereum)
       } else {
-        console.log("Ethereum object doesn't exist!");
+        provider = ethers.getDefaultProvider('rinkeby', {
+            alchemy: process.env.ALCHEMY_RINKEBY_API
+          });
       }
+      const signer = provider.getSigner();
+      const connectedContract = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        FilecoinTicketNFT.abi,
+        signer
+      );
+
+      connectedContract.on("RemainingMintableNFTChange", (remainingNFTs) => {
+        setRemainingNFTs(remainingNFTs);
+      });
+      connectedContract.on(
+        "NewFilecoinNFTMinted",
+        (sender, tokenId, tokenURI) => {
+          console.log("event - new minted NFT");
+          fetchNFTCollection();
+        }
+      );
     } catch (error) {
       console.log(error);
     }
@@ -159,6 +205,29 @@ const App = () => {
     setLinksObj(INITIAL_LINK_STATE);
     setName("");
     setImageView("");
+  }
+
+  const checkIfEligible = async () => {
+    if(currentAccount){
+      const provider = ethers.getDefaultProvider('rinkeby', {
+        alchemy: process.env.ALCHEMY_RINKEBY_API
+      });
+      const connectedContract = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        FilecoinTicketNFT.abi,
+        provider
+      );
+      await connectedContract.ownsTicketNFT(currentAccount).then(resp => {
+        console.log("resp", resp)
+        if(resp === true ){
+          setHasTicket(true);
+          setTransactionState({
+          ...INITIAL_TRANSACTION_STATE,
+          error: "This account already owns a Ticket",
+        });
+      }
+      }).catch(err => console.log("error checking account eligibility", err));
+    }
   }
 
   /* Helper function for createNFTData */
@@ -177,6 +246,15 @@ const App = () => {
   /* Create the IPFS CID of the json data */
   const createNFTData = async () => {
     console.log("saving to NFT storage");
+
+    if(hasTicket) {
+      setTransactionState({
+        ...INITIAL_TRANSACTION_STATE,
+        error: "This account already owns a Ticket",
+      });
+      return;
+    }
+
     resetState();
     setTransactionState({
       ...INITIAL_TRANSACTION_STATE,
@@ -192,7 +270,7 @@ const App = () => {
     // The Advanced Encryption Standard (AES) is a U.S. Federal Information Processing Standard (FIPS). 
     // It was selected after a 5-year process where 15 competing designs were evaluated.
     // This is step one in preventing front end injection into the NFT we're trying to save and mint
-    const data = CryptoJS.AES.encrypt(`${baseSVG}${name}</text></svg>`, process.env.REACT_APP_ENCRYPT_KEY);
+    const data = CryptoJS.AES.encrypt(`${baseSVG}${name}</tspan></text></svg>`, process.env.REACT_APP_ENCRYPT_KEY);
 
 
     //lets load up this token with some metadata and our image and save it to NFT.storage
@@ -203,14 +281,14 @@ const App = () => {
     try {
       await client
         .store({
-          name: `${name}: Filecoin @ NFTHack 2022`,
+          name: `${name}: Filecoin @ Faber Web3 Hack 2022`,
           description:
-            "NFT created for EthGlobal NFTHack 2022 and limited to 100 personalised tokens",
+            "NFT created for Faber Web3 Hack 2022 and limited to 100 personalised tokens",
           image: new File(
             [
               CryptoJS.AES.decrypt(data, process.env.REACT_APP_ENCRYPT_KEY).toString(CryptoJS.enc.Utf8)
             ],
-            `FilecoinNFTHack.svg`,
+            `FilecoinFaberWeb3Hack.svg`,
             {
               type: "image/svg+xml",
             }
@@ -225,6 +303,7 @@ const App = () => {
             success: "Saved NFT data to NFT.Storage...!! We created an IPFS CID & made a Filecoin Storage Deal with one call!",
             loading: "",
           });
+          setHasTicket(true);
           console.log("metadata saved", metadata);
 
           // To view the data we just saved in the browser we need to use an IPFS http bridge
@@ -268,7 +347,7 @@ const App = () => {
         const signer = provider.getSigner();
         const connectedContract = new ethers.Contract(
           CONTRACT_ADDRESS,
-          filecoinNFTHack.abi,
+          FilecoinTicketNFT.abi,
           signer
         );
 
@@ -352,14 +431,17 @@ const App = () => {
  */
   const fetchNFTCollection = async () => {
     console.log("fetching nft collection");
-    const provider = new ethers.providers.JsonRpcProvider("https://speedy-nodes-nyc.moralis.io/b448324e12e4f4243acad791/eth/rinkeby");
+    // const provider = new ethers.providers.JsonRpcProvider("https://speedy-nodes-nyc.moralis.io/b448324e12e4f4243acad791/eth/rinkeby");
+    const provider = ethers.getDefaultProvider('rinkeby', {
+      alchemy: process.env.ALCHEMY_RINKEBY_API
+    });
     // provider is read-only get a signer for on-chain transactions
     // const signer = provider.getSigner();
     // const provider = new ethers.providers.Web3Provider(ethereum);
     // const signer = provider.getSigner();
     const connectedContract = new ethers.Contract(
       CONTRACT_ADDRESS,
-      filecoinNFTHack.abi,
+      FilecoinTicketNFT.abi,
       provider
     );
 
@@ -368,8 +450,16 @@ const App = () => {
       setRemainingNFTs(remainingNFTs.toNumber()); //update state
     }).catch(err => console.log("error getting remaining nfts", err));
 
+    let maxNFTs;
+    await connectedContract.maxNFTs().then(max => {
+      maxNFTs= max;
+    }).catch(err => console.log("error getting max nfts", err));
+
     await connectedContract.getNFTCollection().then(collection => {
       console.log("collection", collection);
+      if(collection.length === 0) {
+        setRemainingNFTs(maxNFTs);
+      }
       setNftCollectionData(collection); //update state
     }).catch(err => console.log("error fetching nft collection data", err));
 
@@ -380,7 +470,7 @@ const App = () => {
 
   /* Render our page */
   return (
-    <Layout connected={currentAccount === ""} connectWallet={connectWallet}>
+    <Layout connected={currentAccount === null} connectWallet={connectWallet}>
       <>
         <p className="sub-sub-text">{`Remaining NFT's: ${remainingNFTs}`}</p>
         {transactionState !== INITIAL_TRANSACTION_STATE && <Status transactionState={transactionState}/>}
@@ -388,12 +478,12 @@ const App = () => {
           !linksObj.etherscan && <Link link={imageView} description="See IPFS image link"/>}
         {imageView && <ImagePreview imgLink ={imageView}/>}
         {linksObj.etherscan && <DisplayLinks linksObj={linksObj} />}
-        {currentAccount === "" ? (
+        {currentAccount === null ? (
           <ConnectWalletButton connectWallet={connectWallet}/>
         ) : transactionState.loading ? (
           <div />
         ) : (
-          <MintNFTInput name={name} setName={setName} transactionState={transactionState} createNFTData={createNFTData}/>
+          !hasTicket && <MintNFTInput name={name} setName={setName} transactionState={transactionState} createNFTData={createNFTData} />
         )}
         {recentlyMinted && <NFTViewer recentlyMinted={recentlyMinted}/>}
       </>

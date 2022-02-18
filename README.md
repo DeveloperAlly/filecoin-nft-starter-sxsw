@@ -12,12 +12,14 @@ You can see the project live here: https://shrill-wave-1303.on.fleek.co/
 <img width="1714" alt="Screen Shot 2022-02-18 at 8 16 37 pm" src="https://user-images.githubusercontent.com/12529822/154653665-db2c101d-32de-4da5-b072-ea461cfec84b.png">
 
 
+
 # Read-me still a work in progress.... watch this git commit! XD
 
 Dev Things (contracts):
+
 - Solidity
 - Hardhat
-- Alchemy 
+- Alchemy
 
 Ways to save your NFT SVG
 
@@ -38,6 +40,17 @@ Deploy contract to rinkeby:
 Running the front end locally
 ```npm install && npm start```
 
+
+Verify your contract on etherscan
+
+> npx hardhat verify --network rinkeby --contract contracts/FilecoinTicketNFT.sol:FilecoinTicketNFT DEPLOYED_CONTRACT_ADDRESS "TRUSTED_FORWARDER_ARG"
+
+See your contract deployment: https://rinkeby.etherscan.io/address/DEPLOYED_CONTRACT_ADDRESS
+
+> npx hardhat verify --network rinkeby DEPLOYED_CONTRACT_ADDRESS
+
+Running the front end localy (host on Fleek)
+npm install && npm start
 
 
 # To make this project from scratch:
@@ -109,3 +122,4 @@ Resources
 - See the NFT.School guide https://nftschool.dev/
 - Public Gateway status checker: https://ipfs.github.io/public-gateway-checker/
 - Faucets for rinkeby eth: https://faucets.chain.link/rinkeby 
+

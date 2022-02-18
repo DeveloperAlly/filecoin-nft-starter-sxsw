@@ -7,8 +7,8 @@ return(
         src={imgLink}
         alt="NFT image preview"
         height="200px"
-        width="200px"
-        style={{ backgroundColor: "white" }}
+        width="300px"
+        style={{ backgroundColor: "transparent" }}
       />
     </div>)
 }
