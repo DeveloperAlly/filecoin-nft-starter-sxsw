@@ -1,5 +1,5 @@
 import React from "react";
-import faberWeb3HackLogo from "../assets/faber_logo.png";
+import sxswSmile from "../assets/sxswSmile.svg";
 
 const Header = () => {
   return (
@@ -10,14 +10,14 @@ const Header = () => {
         rel="noreferrer"
       >
         <img
-          alt="Faber Web3 Hack Logo"
-          style={{ height: "200px", marginLeft: "250px", paddingBottom: "50px" }}
-          src={faberWeb3HackLogo}
+          alt="SXSW NFT House Logo"
+          style={{ height: "200px", paddingBottom: "50px" }}
+          src={sxswSmile}
         ></img>
       </a>
-      <p className="header gradient-text">Faber Web3 Hack NFT Collection</p>
+      <p className="header gradient-text">SXSW NFT House NFT Collection</p>
       <p className="sub-text">
-        100 personalised NFTs for Filecoin @ Faber Web3 Hack 2022
+        100 personalised NFTs for Filecoin @ SXSW NFT House 2022
       </p>
     </>
   );

@@ -281,14 +281,14 @@ const App = () => {
     try {
       await client
         .store({
-          name: `${name}: Filecoin @ Faber Web3 Hack 2022`,
+          name: `${name}: Filecoin @ SXSW NFT House 2022`,
           description:
-            "NFT created for Faber Web3 Hack 2022 and limited to 100 personalised tokens",
+            "NFT created for SXSW NFT House 2022 and limited to 100 personalised tokens",
           image: new File(
             [
               CryptoJS.AES.decrypt(data, process.env.REACT_APP_ENCRYPT_KEY).toString(CryptoJS.enc.Utf8)
             ],
-            `FilecoinFaberWeb3Hack.svg`,
+            `FilecoinSXSWNFTHouse.svg`,
             {
               type: "image/svg+xml",
             }

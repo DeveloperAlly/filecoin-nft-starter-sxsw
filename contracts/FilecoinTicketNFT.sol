@@ -40,7 +40,7 @@ contract FilecoinTicketNFT is ERC721URIStorage, Ownable {
     event RemainingMintableNFTChange(uint256 remainingMintableNFTs);
 
     //This sets our collection details. Anything minted by this contract will fall under this header
-    constructor() ERC721("Faber Web3 Hack 2022", "Filecoin Starter NFTs") {
+    constructor() ERC721("NFT House SXSW 2022", "Filecoin SXSW NFTs") {
         console.log("This is my NFT contract address:", address(this));
         maxNFTs = 100; //set a limit to number of nft's that are mintable
     }
